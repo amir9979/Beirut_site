@@ -1,0 +1,124 @@
+extends baseProject.pug
+
+
+block page
+	div.project-container
+		div(class="project-list" id="ProjectHolder")
+			btn.btn-primary(id="selectAllBtn") select all
+			if projects != undefined
+				div(class="form-check")
+					each project in projects
+						input(class="form-check-input" type="checkbox" value=project)
+						label(class="form-check-label")=project
+			if projects == undefined
+				span No projects were found!
+		div.generalDetails
+			h4 Project selection
+			p
+				| Hello! here you can either choose to download multiple projects at once
+				br
+				| or choose to take only a specific versions from a specific project.
+				br
+				br
+				b Multiple projects:
+				|	In order to download multiple projects please select the desired projects
+				br
+				|	from the list on the left side of the screen and then click download selected.
+				br
+				b Specific versions:
+				|	In order to download specific versions please click on the desired project
+				br
+				|	from the list on the left side of the screen and mark the desired versions
+				br
+				|  then click on the Extract features button.
+
+				
+			btn.btn-primary(id="downloadCheckedBtn") Download selected
+
+
+
+	div(class="project-table" id="projectTable")
+		button(class="btn btn-dark" id="downloadFeaturesBtn") Extract features
+		br
+		text(class="projectName" id="projectTitle")
+		button(class="btn btn-dark csvbutton" id="csvbutton" on-click="download()") Download
+		div(class="tableWrapper")
+
+	script(src="js/tableController.js").
+	script.
+		$(document).ready(function(){
+		$('.form-check-label').click(function(){
+			showTable($(this).text(),'project');
+		});
+		});
+	//- script.
+	//- 	$("body").on("click", "td.version", function() {
+	//- 		var version = $(this).html();
+	//- 		var type = $("table").attr('id');
+	//- 		showTable(version,type);
+	//- 	});
+	script.
+		$("#selectAllBtn").on("click", function(){
+			$('.form-check').find('.form-check-input').prop('checked', true);
+		});
+	script.
+		function str2bytes (str) {
+			let bytes = new Uint8Array(str.length);
+			for (let i=0; i<str.length; i++) {
+				bytes[i] = str.charCodeAt(i);
+			}
+			return bytes;
+		}
+		$("#downloadCheckedBtn").on("click", function(){
+			let checked = $(".form-check-input").filter(function() {
+				return this["checked"] == true;
+			});
+			var selected = [];
+			checked.each(function(){
+				selected.push(this.value);
+			});
+			let saveData = $.ajax({
+				type: 'POST',
+				url: "controllers/zipProjects",
+				data: {projects: selected},
+				success: function(resultData) {
+					let blob = new Blob([str2bytes(resultData)],{type: "application/zip"});
+					saveAs(blob,"projects.zip");
+				},
+				error: function(request, status, error){
+					alert(request.responseText);
+				}
+			});
+		});
+
+	script.
+		function str2bytes (str) {
+			let bytes = new Uint8Array(str.length);
+			for (let i=0; i<str.length; i++) {
+				bytes[i] = str.charCodeAt(i);
+			}
+			return bytes;
+		}
+		$("#downloadFeaturesBtn").on("click", function(){
+			let checked = $(".version-check-input").filter(function() {
+				return this["checked"] == true;
+			});
+			let selected = [];
+			checked.each(function(){
+				selected.push(this.value);
+			});
+			let projectName  = $('#projectTitle')[0].innerHTML
+			if(projectName != ''){
+				if(selected.length > 0){
+				let featureGroup = sessionStorage.getItem('feature-group')
+				// save session versions and project name
+				sessionStorage.setItem('projectName',projectName)
+				sessionStorage.setItem('versions',JSON.stringify(selected))
+				$(location).attr('href', 'project/features')
+				}else{
+					alert('please choose versions')
+				}
+			}else{
+				alert('please choose a project!')
+			}
+		});
